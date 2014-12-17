@@ -1,0 +1,9 @@
+
+exec
+{
+	'service-list':
+	environment=>['OS_USERNAME=admin' , 'OS_PASSWORD=secrete' ,'OS_AUTH_URL=http://127.0.0.1:5000/v2.0','OS_TENANT_NAME=demo','OS_REGION_NAME=RegionOne'],
+	logoutput=>true,
+	command=>'/usr/bin/nova-manage service list'
+}
+

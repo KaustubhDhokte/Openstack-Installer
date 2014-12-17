@@ -1,0 +1,253 @@
+#modules needed : glance
+
+import '/var/installer/ref.pp'
+import '/var/installer/ports.pp'
+
+package 
+{ 
+	'glance':
+	ensure => installed,
+}
+->
+file
+{ 
+	'/var/lib/glance/glance.sqlite':
+	ensure => absent,
+}
+->
+mysqlexec::db
+{	
+	'creating glance database':
+	host=>localhost,
+	username=>root,
+	password=>$mysql_root_password,
+	dbname=>$glance_dbname,
+	ensure=>present,
+}
+->
+mysqlexec
+{
+	'granting access':
+	host=>localhost,
+	username=>root,
+	password=>$mysql_root_password,
+	mysqlcommand=>"GRANT ALL ON $glance_dbname.* TO \"$glance_dbuser\"@\"%\" IDENTIFIED BY \"$glance_dbpass\""
+}
+->
+mysqlexec::user
+{	
+	'granting access localhost':
+	host=>localhost,
+	username=>root,
+	password=>$mysql_root_password,
+	dbuser=>$glance_dbuser,
+	privileges =>[ALL],
+	dbname =>$glance_dbname,
+	dbpassword=>$glance_dbpass,
+	ensure=>present,
+}
+->
+file
+{   
+	"/var/openstack":
+	ensure => "directory",
+}
+->
+file
+{   
+	"/var/openstack/glance":
+	ensure => "directory",
+}
+->
+file 
+{ 
+'/var/openstack/glance/glance-api-paste.ini':
+ensure => present,
+source => '/etc/glance/glance-api-paste.ini',
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/paste.filter_factory':
+	value=>	'keystoneclient.middleware.auth_token:filter_factory',
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/delay_auth_decision':
+	value=>	true,
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/auth_host':
+	value=>$host_ip,
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/auth_port':
+	value=>$auth_port,
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/auth_protocol':
+	value=>'http',
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/admin_tenant_name':
+	value=>$service_tenant,
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/admin_user':
+	value=>$glance_user,
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/admin_password':
+	value=>$service_pass,
+	ensure=>present,
+}
+->
+file 
+{ 
+'/var/openstack/glance/glance-registry-paste.ini':
+ensure => present,
+source => '/etc/glance/glance-registry-paste.ini',
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/paste.filter_factory':
+	value=>	'keystoneclient.middleware.auth_token:filter_factory',
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/auth_host':
+	value=>$host_ip,
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/auth_port':
+	value=>$auth_port,
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/auth_protocol':
+	value=>'http',
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/admin_tenant_name':
+	value=>$service_tenant,
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/admin_user':
+	value=>$glance_user,
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/admin_password':
+	value=>$service_pass,
+	ensure=>present,
+}
+->
+file 
+{ 
+'/var/openstack/glance/glance-api.conf':
+ensure => present,
+source => '/etc/glance/glance-api.conf',
+}
+->
+glance_api_config
+{
+	'DEFAULT/sql_connection':
+	ensure=>present,
+	value=>"mysql://$glance_dbuser:glance_dbpass@$host_ip/$glance_dbname",
+}
+->
+glance_api_config
+{
+	'paste_deploy/flavor':
+	ensure=>present,
+	value=>'keystone';
+}
+file 
+{ 
+'/var/openstack/glance/glance-registry.conf':
+ensure => present,
+source => '/etc/glance/glance-registry.conf',
+}
+->
+glance_registry_config
+{
+	'DEFAULT/sql_connection':
+	ensure=>present,
+	value=>"mysql://$glance_dbuser:$glance_dbpass@$host_ip/$glance_dbname",
+}
+->
+glance_registry_config
+{
+	'paste_deploy/flavor':
+	ensure=>present,
+	value=>'keystone';
+}
+->
+exec 
+{ 
+	'glance-api_restart_1':
+	command=>'/usr/sbin/service glance-api restart',
+}
+->
+exec 
+{ 
+	'glance-registry_restart_1':
+	command=>'/usr/sbin/service glance-registry restart',
+}
+->
+exec 
+{ 
+	'db_sync':
+	command=>'/usr/bin/glance-manage db_sync',
+}
+->
+exec 
+{ 
+	'glance-api_restart_2':
+	command=>'/usr/sbin/service glance-api restart',
+}
+->
+exec 
+{ 
+	'glance-registry_restart_2':
+	command=>'/usr/sbin/service glance-registry restart',
+}
+
+
+

@@ -1,0 +1,341 @@
+#remember to install modules mysqlexec,keystone and change service-id to service_id
+
+
+$cloud_cont='127.0.0.1'			#ip address of cloud controller node
+$token='012345SECRET99TOKEN012345'
+$endpoint='http://${cloud_cont}:35357/v2.0'
+
+
+package 
+{ 
+	'python-mysqldb' :
+	ensure => installed,
+}
+->
+package 
+{ 
+	'mysql-server' :
+	ensure => installed,
+}
+->
+package 
+{ 
+	'mysql-client' :
+	ensure => installed,
+}
+->
+mysqlexec::db
+{	
+	'creating database':
+	host=>localhost,
+	username=>root,
+	dbname=>keystone,
+	ensure=>present,
+}
+->
+mysqlexec::user
+{	
+	'granting access':
+	username=>root,
+	dbuser=>keystone,
+	privileges => [ALL],
+	dbname =>keystone,
+	ensure=>present,
+}
+->
+mysqlexec::user
+{	
+	'granting access localhost':
+	host=>localhost,
+	username=>root,
+	dbuser=>keystone,
+	privileges =>[ALL],
+	dbname =>keystone,
+	ensure=>present,
+}
+->
+package 
+{ 
+	'keystone' :
+	ensure => installed,
+}
+->
+package 
+{ 
+	'python-keystone' :
+	ensure => installed,
+}
+->
+package 
+{ 
+	'python-keystoneclient' :
+	ensure => installed,
+}
+->
+file
+{ 
+	'/var/lib/keystone/keystone.db' :
+	ensure => absent,
+}
+->
+file
+{   
+	"/tmp/openstack":
+	ensure => "directory",
+}
+->
+file
+{   
+	"/tmp/openstack/keystone":
+	ensure => "directory",
+}
+->
+file 
+{ 
+'/tmp/openstack/keystone/keystone.conf':
+ensure => present,
+source => '/etc/keystone/keystone.conf',
+}
+->
+keystone_config
+{
+	'DEFAULT/admin_token':
+	ensure=>present,
+	value=>'012345SECRET99TOKEN012345'
+}
+->
+keystone_config
+{
+	'sql/connection':
+	ensure=>present,
+	value=>'mysql://keystone:@$cloud_cont/keystone',
+}
+->
+exec 
+{ 
+	'restart':
+	command=>'/usr/sbin/service keystone restart',
+}
+->
+exec 
+{ 
+	'database sync':
+	command=>'/usr/bin/keystone-manage db_sync',
+}
+->
+file 
+{ 
+   '/etc/environment':
+   content => inline_template("SERVICE_TOKEN=${token}\nSERVICE_ENDPOINT=${endpoint} ")
+}
+->
+keystone_tenant 
+{ 'demo':
+  description=>'default tenant',
+  ensure  => present,
+  enabled => 'True',
+}
+->
+keystone_user
+{ 
+  'admin':
+  tenant => 'demo',
+  password => 'secrete',
+  ensure  => present,
+  enabled => 'True',
+}
+->
+keystone_role 
+{ 'admin':
+  ensure => present,
+}
+->
+keystone_tenant 
+{ 'service':
+  description=>'service tenant',
+  ensure  => present,
+  enabled => 'True',
+}
+->
+keystone_user
+{ 
+  'glance':
+  tenant => 'service',
+  password => 'glance',
+  ensure  => present,
+  enabled => 'True',
+}
+->
+keystone_user
+{ 
+  'nova':
+  tenant => 'service',
+  password => 'nova',
+  ensure  => present,
+  enabled => 'True',
+}
+->
+keystone_user
+{ 
+  'ec2':
+  tenant => 'service',
+  password => 'ec2',
+  ensure  => present,
+  enabled => 'True',
+}
+->
+keystone_user
+{ 
+  'swift':
+  tenant => 'service',
+  password => 'swiftpass',
+  ensure  => present,
+  enabled => 'True',
+}
+->
+keystone_service
+{ 
+  'keystone':
+  type => 'identity',
+  description => 'identity service',
+  ensure  => present,
+}
+->
+keystone_endpoint
+{ 
+  'RegionOne/keystone':
+  region => 'RegionOne',
+  public_url => 'http://$cloud_cont:5000/v2.0',
+  internal_url => 'http://$cloud_cont:5000/v2.0',
+  admin_url => 'http://$cloud_cont:35357/v2.0',
+  ensure  => present,
+}
+->
+keystone_service
+{ 
+  'nova':
+  type => 'compute',
+  description => 'compute service',
+  ensure  => present,
+}
+->
+keystone_endpoint
+{ 
+  'RegionOne/nova':
+  region => 'RegionOne',
+  public_url => 'http://$cloud_cont:8774/v2/%(tenant_id)s',
+  internal_url => 'http://$cloud_cont:8774/v2/%(tenant_id)s',
+  admin_url => 'http://$cloud_cont:8774/v2/%(tenant_id)s',
+  ensure  => present,
+}
+->
+keystone_service
+{ 
+  'volume':
+  type => 'volume',
+  description => 'volume service',
+  ensure  => present,
+}
+->
+keystone_endpoint
+{ 
+  'RegionOne/volume':
+  region => 'RegionOne',
+  public_url => 'http://$cloud_cont:8776/v2/%(tenant_id)s',
+  internal_url => 'http://$cloud_cont:8776/v2/%(tenant_id)s',
+  admin_url => 'http://$cloud_cont:8776/v2/%(tenant_id)s',
+  ensure  => present,
+}
+->
+keystone_service
+{ 
+  'glance':
+  type => 'image',
+  description => 'image service',
+  ensure  => present,
+}
+->
+keystone_endpoint
+{ 
+  'RegionOne/glance':
+  region => 'RegionOne',
+  public_url => 'http://$cloud_cont:9292',
+  internal_url => 'http://$cloud_cont:9292',
+  admin_url => 'http://$cloud_cont:9292',
+  ensure  => present,
+}
+->
+keystone_service
+{ 
+  'ec2':
+  type => 'ec2',
+  description => 'ec2 compatibility layer',
+  ensure  => present,
+}
+->
+keystone_endpoint
+{ 
+  'RegionOne/ec2':
+  region => 'RegionOne',
+  public_url => 'http://$cloud_cont:8773/services/Cloud',
+  internal_url => 'http://$cloud_cont:8773/services/Cloud',
+  admin_url => 'http://$cloud_cont:8773/services/Admin',
+  ensure  => present,
+}
+->
+keystone_service
+{ 
+  'swift':
+  type => 'store',
+  description => 'object storage service',
+  ensure  => present,
+}
+->
+keystone_endpoint
+{ 
+  'RegionOne/swift':
+  region => 'RegionOne',
+  public_url => 'http://$cloud_cont:8888/v1/AUTH_%(tenant_id)s',
+  internal_url => 'http://$cloud_cont:8888/v1',
+  admin_url => 'http://$cloud_cont:8888/v1/AUTH_%(tenant_id)s',
+  ensure  => present,
+}
+->
+keystone_user_role 
+{ 'admin@demo':				#user@tenant
+  roles => 'admin',			#role
+  ensure => present,
+}
+->
+keystone_user_role 
+{ 
+  'glance@service':
+  roles => 'admin',
+  ensure => present,
+}
+->
+keystone_user_role 
+{ 
+  'nova@service':
+  roles => 'admin',
+  ensure => present,
+}
+->
+keystone_user_role 
+{ 
+  'ec2@service':
+  roles => ['admin','ec2'],
+  ensure => present,
+}
+->
+keystone_user_role 
+{ 
+  'swift@service':
+  roles => 'admin',
+  ensure => present,
+}
+
+
+
+
+

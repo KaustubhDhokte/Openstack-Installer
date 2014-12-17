@@ -1,0 +1,21 @@
+
+->
+->
+exec 
+{ 
+	'quantum':
+	command=>'/usr/bin/puppet module install --ignore-dependencies -f puppetlabs/quantum',
+}
+
+package
+{
+	'git':
+	ensure=>installed,
+}
+->
+exec 
+{ 
+	'editfile':
+	command=>'/usr/bin/git clone https://github.com/mstrauss/puppet-editfile.git /etc/puppet/modules/editfile',
+}
+

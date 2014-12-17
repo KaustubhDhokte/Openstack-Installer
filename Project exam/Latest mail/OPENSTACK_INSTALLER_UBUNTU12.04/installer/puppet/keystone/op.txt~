@@ -1,0 +1,95 @@
+ketan@ketan-virtual-machine:~$ mysql -u root -p
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 307
+Server version: 5.5.34-0ubuntu0.12.04.1 (Ubuntu)
+
+Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> drop database keystone;
+Query OK, 10 rows affected (0.04 sec)
+
+mysql> quit;
+Bye
+ketan@ketan-virtual-machine:~$ sudo puppet apply puppet/keystone/keystone2.pp
+Warning: Variable access via 'privileges' is deprecated. Use '@privileges' instead. template[/etc/puppet/modules/mysqlexec/templates/userpresent.erb]:1
+   (at /etc/puppet/modules/mysqlexec/templates/userpresent.erb:1:in `result')
+Notice: Compiled catalog for ketan-virtual-machine.localdomain in environment production in 0.52 seconds
+Notice: /Stage[main]/Main/Mysqlexec::Db[creating database]/Mysqlexec[creating database_mysqldbpresent]/Exec[creating database_mysqldbpresent_mysqlexec]/returns: executed successfully
+Notice: /Stage[main]/Main/Mysqlexec::User[granting access]/Mysqlexec[granting access_mysqldbuserpresent]/Exec[granting access_mysqldbuserpresent_mysqlexec]/returns: executed successfully
+Notice: /Stage[main]/Main/Mysqlexec::User[granting access localhost]/Mysqlexec[granting access localhost_mysqldbuserpresent]/Exec[granting access localhost_mysqldbuserpresent_mysqlexec]/returns: executed successfully
+Notice: /Stage[main]/Main/Exec[restart]/returns: executed successfully
+Notice: /Stage[main]/Main/Exec[database sync]/returns: executed successfully
+Notice: /Stage[main]/Main/File[/etc/environment]/content: content changed '{md5}d41d8cd98f00b204e9800998ecf8427e' to '{md5}ad42d222bd992c613140d8c8951815e6'
+Notice: /Stage[main]/Main/Keystone_tenant[demo]/ensure: created
+Notice: /Stage[main]/Main/Keystone_user[admin]/ensure: created
+Notice: /Stage[main]/Main/Keystone_role[admin]/ensure: created
+Notice: /Stage[main]/Main/Keystone_tenant[service]/ensure: created
+Notice: /Stage[main]/Main/Keystone_user[glance]/ensure: created
+Notice: /Stage[main]/Main/Keystone_user[nova]/ensure: created
+Notice: /Stage[main]/Main/Keystone_user[ec2]/ensure: created
+Notice: /Stage[main]/Main/Keystone_user[swift]/ensure: created
+Notice: /Stage[main]/Main/Keystone_service[keystone]/ensure: created
+Notice: /Stage[main]/Main/Keystone_endpoint[RegionOne/keystone]/ensure: created
+Notice: /Stage[main]/Main/Keystone_service[nova]/ensure: created
+Notice: /Stage[main]/Main/Keystone_endpoint[RegionOne/nova]/ensure: created
+Notice: /Stage[main]/Main/Keystone_service[volume]/ensure: created
+Notice: /Stage[main]/Main/Keystone_endpoint[RegionOne/volume]/ensure: created
+Notice: /Stage[main]/Main/Keystone_service[glance]/ensure: created
+Notice: /Stage[main]/Main/Keystone_endpoint[RegionOne/glance]/ensure: created
+Notice: /Stage[main]/Main/Keystone_service[ec2]/ensure: created
+Notice: /Stage[main]/Main/Keystone_endpoint[RegionOne/ec2]/ensure: created
+Notice: /Stage[main]/Main/Keystone_service[swift]/ensure: created
+Notice: /Stage[main]/Main/Keystone_endpoint[RegionOne/swift]/ensure: created
+Notice: /Stage[main]/Main/Keystone_user_role[admin@demo]/ensure: created
+Notice: /Stage[main]/Main/Keystone_user_role[glance@service]/ensure: created
+Notice: /Stage[main]/Main/Keystone_user_role[nova@service]/ensure: created
+Error: Execution of '/usr/bin/keystone --endpoint http://127.0.0.1:35357/v2.0/ user-role-add --user-id fab80467f04642ce907189836a1896b2 --tenant-id 64bf2d86019e47dea9cf567ed66afd2e --role-id ' returned 1: No role with a name or ID of '' exists.
+
+Error: /Stage[main]/Main/Keystone_user_role[ec2@service]/ensure: change from absent to present failed: Execution of '/usr/bin/keystone --endpoint http://127.0.0.1:35357/v2.0/ user-role-add --user-id fab80467f04642ce907189836a1896b2 --tenant-id 64bf2d86019e47dea9cf567ed66afd2e --role-id ' returned 1: No role with a name or ID of '' exists.
+
+Notice: /Stage[main]/Main/Keystone_user_role[swift@service]: Dependency Keystone_user_role[ec2@service] has failures: true
+Warning: /Stage[main]/Main/Keystone_user_role[swift@service]: Skipping because of failed dependencies
+Notice: Finished catalog run in 20.85 seconds
+ketan@ketan-virtual-machine:~$ sudo puppet apply puppet/keystone/verify1.pp
+Notice: Compiled catalog for ketan-virtual-machine.localdomain in environment production in 0.05 seconds
+Notice: /Stage[main]/Main/File[/etc/environment]/content: content changed '{md5}ad42d222bd992c613140d8c8951815e6' to '{md5}d41d8cd98f00b204e9800998ecf8427e'
+Notice: Finished catalog run in 0.14 seconds
+ketan@ketan-virtual-machine:~$ sudo puppet apply puppet/keystone/verify2.pp
+Notice: Compiled catalog for ketan-virtual-machine.localdomain in environment production in 0.04 seconds
+Notice: /Stage[main]/Main/Exec[token-get]/returns: +----------+----------------------------------+
+Notice: /Stage[main]/Main/Exec[token-get]/returns: | Property |              Value               |
+Notice: /Stage[main]/Main/Exec[token-get]/returns: +----------+----------------------------------+
+Notice: /Stage[main]/Main/Exec[token-get]/returns: | expires  |       2014-01-19T20:05:42Z       |
+Notice: /Stage[main]/Main/Exec[token-get]/returns: |    id    | 6ae17ddf900941f5937b03453c837b34 |
+Notice: /Stage[main]/Main/Exec[token-get]/returns: | user_id  | a82d300a39c94199b19831c711ec38e2 |
+Notice: /Stage[main]/Main/Exec[token-get]/returns: +----------+----------------------------------+
+Notice: /Stage[main]/Main/Exec[token-get]/returns: executed successfully
+Notice: /Stage[main]/Main/Exec[token-get-t]/returns: +-----------+----------------------------------+
+Notice: /Stage[main]/Main/Exec[token-get-t]/returns: |  Property |              Value               |
+Notice: /Stage[main]/Main/Exec[token-get-t]/returns: +-----------+----------------------------------+
+Notice: /Stage[main]/Main/Exec[token-get-t]/returns: |  expires  |       2014-01-19T20:05:42Z       |
+Notice: /Stage[main]/Main/Exec[token-get-t]/returns: |     id    | 148f1639e7344bc2bf4fed73b135ce0c |
+Notice: /Stage[main]/Main/Exec[token-get-t]/returns: | tenant_id | ef2e9f01c7cd4a62bcb899e12d8f2722 |
+Notice: /Stage[main]/Main/Exec[token-get-t]/returns: |  user_id  | a82d300a39c94199b19831c711ec38e2 |
+Notice: /Stage[main]/Main/Exec[token-get-t]/returns: +-----------+----------------------------------+
+Notice: /Stage[main]/Main/Exec[token-get-t]/returns: executed successfully
+Notice: /Stage[main]/Main/Exec[user-list]/returns: WARNING: Bypassing authentication using a token & endpoint (authentication credentials are being ignored).
+Notice: /Stage[main]/Main/Exec[user-list]/returns: +----------------------------------+--------+---------+-------+
+Notice: /Stage[main]/Main/Exec[user-list]/returns: |                id                |  name  | enabled | email |
+Notice: /Stage[main]/Main/Exec[user-list]/returns: +----------------------------------+--------+---------+-------+
+Notice: /Stage[main]/Main/Exec[user-list]/returns: | a82d300a39c94199b19831c711ec38e2 | admin  |   True  |       |
+Notice: /Stage[main]/Main/Exec[user-list]/returns: | fab80467f04642ce907189836a1896b2 |  ec2   |   True  |       |
+Notice: /Stage[main]/Main/Exec[user-list]/returns: | c1f7e48032f94758a65f40f1549f4cb5 | glance |   True  |       |
+Notice: /Stage[main]/Main/Exec[user-list]/returns: | 19a22444505442ffb12c901041f0c1b4 |  nova  |   True  |       |
+Notice: /Stage[main]/Main/Exec[user-list]/returns: | e6b52c57ca2948c2af59bd8e40bf4d8b | swift  |   True  |       |
+Notice: /Stage[main]/Main/Exec[user-list]/returns: +----------------------------------+--------+---------+-------+
+Notice: /Stage[main]/Main/Exec[user-list]/returns: executed successfully
+Notice: Finished catalog run in 1.55 seconds
+ketan@ketan-virtual-machine:~$ 

@@ -1,0 +1,224 @@
+package 
+{ 
+	'glance':
+	ensure => installed,
+}
+->
+file
+{ 
+	'/var/lib/glance/glance.sqlite':
+	ensure => absent,
+}
+->
+mysqlexec::db
+{	
+	'creating glance database':
+	host=>localhost,
+	username=>root,
+	dbname=>glance,
+	ensure=>present,
+}
+->
+mysqlexec::user
+{	
+	'granting access':
+	username=>root,
+	dbuser=>glance,
+	privileges => [ALL],
+	dbname =>glance,
+	ensure=>present,
+}
+->
+mysqlexec::user
+{	
+	'granting access localhost':
+	host=>localhost,
+	username=>root,
+	dbuser=>glance,
+	privileges =>[ALL],
+	dbname =>glance,
+	ensure=>present,
+}
+->
+glance_api_config
+{
+	'DEFAULT/enable_v1_api':
+	ensure=>present,
+	value=>'False',
+}
+->
+glance_api_config
+{
+	'DEFAULT/enable_v2_api':
+	ensure=>present,
+	value=>'True',
+}
+->
+glance_api_config
+{
+	'keystone_authtoken/auth_host':
+	ensure=>present,
+	value=>'127.0.0.1',
+}
+->
+glance_api_config
+{
+	'keystone_authtoken/auth_port':
+	ensure=>present,
+	value=>'35357',
+}
+->
+glance_api_config
+{
+	'keystone_authtoken/auth_protocol':
+	ensure=>present,
+	value=>'http',
+}
+->
+glance_api_config
+{
+	'keystone_authtoken/admin_tenant_name':
+	ensure=>present,
+	value=>'service',
+}
+->
+glance_api_config
+{
+	'keystone_authtoken/admin_user':
+	ensure=>present,
+	value=>'glance',
+}
+->
+glance_api_config
+{
+	'keystone_authtoken/admin_password':
+	ensure=>present,
+	value=>'glance',
+}
+->
+glance_api_config
+{
+	'paste_deploy/config_file':
+	ensure=>present,
+	value=>'/etc/glance/glance-api-paste.ini',
+}
+->
+glance_api_config
+{
+	'paste_deploy/flavour':
+	ensure=>present,
+	value=>'keystone',
+}
+->
+glance_api_config
+{
+	'DEFAULT/sql_connection':
+	ensure=>present,
+	value=>'mysql://glance:@127.0.0.1/glance',
+}
+->
+exec 
+{ 
+	'glance-api_restart_1':
+	command=>'/usr/sbin/service glance-api restart',
+}
+->
+glance_registry_config
+{
+	'keystone_authtoken/auth_host':
+	ensure=>present,
+	value=>'127.0.0.1',
+}
+->
+glance_registry_config
+{
+	'keystone_authtoken/auth_port':
+	ensure=>present,
+	value=>'35357',
+}
+->
+glance_registry_config
+{
+	'keystone_authtoken/auth_protocol':
+	ensure=>present,
+	value=>'http',
+}
+->
+glance_registry_config
+{
+	'keystone_authtoken/admin_tenant_name':
+	ensure=>present,
+	value=>'service',
+}
+->
+glance_registry_config
+{
+	'keystone_authtoken/admin_user':
+	ensure=>present,
+	value=>'glance',
+}
+->
+glance_registry_config
+{
+	'keystone_authtoken/admin_password':
+	ensure=>present,
+	value=>'glance',
+}
+->
+glance_registry_config
+{
+	'paste_deploy/config_file':
+	ensure=>present,
+	value=>'/etc/glance/glance-registry-paste.ini'
+}
+->
+glance_registry_config
+{
+	'paste_deploy/flavour':
+	ensure=>present,
+	value=>'keystone',
+}
+->
+glance_registry_config
+{
+	'DEFAULT/sql_connection':
+	ensure=>present,
+	value=>'mysql://glance:@127.0.0.1/glance',
+}
+->
+glance_registry_paste_ini
+{
+	'pipeline:glance-registry-keystone/pipeline':
+	ensure=>present,
+	value=>'authtoken context registryapp',
+}
+->
+exec 
+{ 
+	'glance-registry_restart1':
+	command=>'/usr/sbin/service glance-registry restart',
+}
+->
+exec 
+{ 
+	'version_control':
+	command=>'/usr/bin/glance-manage version_control 0',
+}
+->
+exec 
+{ 
+	'db_sync':
+	command=>'/usr/bin/glance-manage db_sync',
+}
+->
+exec 
+{ 
+	'glance-registry_restart2':
+	command=>'/usr/sbin/service glance-registry restart',
+}
+->
+exec 
+{ 
+	'glance-api_restart2':
+	command=>'/usr/sbin/service glance-api restart',
+}

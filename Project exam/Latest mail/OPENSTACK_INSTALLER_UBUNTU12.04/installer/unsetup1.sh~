@@ -1,0 +1,17 @@
+#!/bin/bash
+
+apt-get update
+
+printf "\n\n removing initial configuration.... \n\n"
+
+puppet apply /var/installer/puppet/iniconfig/un.pp
+
+rm -rf /var/openstack
+
+printf "\n\n removing puppet.... \n\n"
+
+rm puppetlabs-release-precise.deb
+sudo apt-get purge puppet
+sudo apt-get autoremove
+
+exit 0

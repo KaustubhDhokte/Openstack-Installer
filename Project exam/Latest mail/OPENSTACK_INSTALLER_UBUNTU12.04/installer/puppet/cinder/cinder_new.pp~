@@ -1,0 +1,327 @@
+#modules needed : cinder,lvm,nova
+#use losetup -d to unmount volume
+
+package 
+{ 
+	'cinder-api' :
+	ensure => installed,
+}
+->
+package 
+{ 
+	'cinder-scheduler' :
+	ensure => installed,
+}
+->
+package 
+{ 
+	'cinder-volume' :
+	ensure => installed,
+}
+->
+package 
+{ 
+	'iscsitarget' :
+	ensure => installed,
+}
+->
+package 
+{ 
+	'open-iscsi' :
+	ensure => installed,
+}
+->
+package 
+{ 
+	'iscsitarget-dkms' :
+	ensure => installed,
+}
+->
+
+package 
+{ 
+	'python-cinderclient' :
+	ensure => installed,
+}
+
+->
+exec
+{
+	'enabling_ip_forward':
+	command=>"/bin/sed -i 's/false/true/g' /etc/default/iscsitarget"
+}
+->
+exec 
+{ 
+	'starting iscsitarget':
+	command=>'/usr/sbin/service iscsitarget start',
+}
+->
+exec 
+{ 
+	'starting open-iscsi':
+	command=>'/usr/sbin/service open-iscsi start',
+}
+->
+mysqlexec::db
+{	
+	'creating database':
+	host=>localhost,
+	username=>root,
+	dbname=>cinder,
+	ensure=>present,
+}
+->
+mysqlexec::user
+{	
+	'granting access':
+	username=>root,
+	privileges =>[ALL],
+	dbuser=>cinderUser,
+	dbpassword=>cinderPass,
+	dbname =>cinder,
+	ensure=>present,
+}
+->
+mysqlexec::user
+{	
+	'granting access localhost':
+	host=>localhost,
+	username=>root,
+	privileges =>[ALL],
+	dbuser=>cinderUser,
+	dbpassword=>cinderPass,
+	dbname =>cinder,
+	ensure=>present,
+}
+->
+file
+{   
+	"/var/openstack":
+	ensure => "directory",
+}
+->
+file
+{   
+	"/var/openstack/cinder":
+	ensure => "directory",
+}
+->
+file 
+{ 
+'/var/openstack/cinder/api-paste.ini':
+ensure => present,
+source => '/etc/cinder/api-paste.ini',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/paste.filter_factory':
+	ensure=>present,	
+	value=>'keystone.middleware.auth_token:filter_factory',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/service_protocol':
+	ensure=>present,	
+	value=>'http',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/service_host':
+	ensure=>present,	
+	value=>'127.0.0.1',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/service_port':
+	ensure=>present,	
+	value=>'5000',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/auth_host':
+	ensure=>present,	
+	value=>'127.0.0.1',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/auth_port':
+	ensure=>present,	
+	value=>'35357',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/auth_protocol':
+	ensure=>present,	
+	value=>'http',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/admin_tenant_name':
+	ensure=>present,	
+	value=>'service',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/admin_user':
+	ensure=>present,	
+	value=>'cinder',
+}
+->
+cinder_api_paste_ini
+{
+	'filter:authtoken/admin_password':
+	ensure=>present,	
+	value=>'service_pass',
+}
+->
+file 
+{ 
+'/var/openstack/cinder/cinder.conf':
+ensure => present,
+source => '/etc/cinder/cinder.conf',
+}
+->
+cinder_config
+{
+	'DEFAULT/rootwrap_config':
+	ensure=>present,	
+	value=>'/etc/cinder/rootwrap.conf',
+}
+->
+cinder_config
+{
+	'DEFAULT/sql_connection':
+	ensure=>present,	
+	value=>'mysql://cinderUser:cinderPass@127.0.0.1/cinder',
+}
+->
+cinder_config
+{
+	'DEFAULT/api_paste_config':
+	ensure=>present,	
+	value=>'/etc/cinder/api-paste.ini',
+}
+->
+cinder_config
+{
+	'DEFAULT/iscsi_helper':
+	ensure=>present,	
+	value=>'ietadm',
+}
+->
+
+cinder_config
+{
+	'DEFAULT/volume_name_template':
+	ensure=>present,	
+	value=>'volume-%s',
+}
+->
+cinder_config
+{
+	'DEFAULT/volume_group':
+	ensure=>present,	
+	value=>'cinder-volumes',
+}
+->
+cinder_config
+{
+	'DEFAULT/verbose':
+	ensure=>present,	
+	value=>True,
+}
+->
+cinder_config
+{
+	'DEFAULT/auth_strategy':
+	ensure=>present,	
+	value=>'keystone',
+}
+->
+cinder_config
+{
+	'DEFAULT/osapi_volume_listen_port':
+	ensure=>absent,	
+}
+->
+exec 
+{ 
+	'database sync':
+	command=>'/usr/bin/cinder-manage db sync',
+}
+->
+exec 
+{ 
+	'creating test loopfile':
+	command=>'/bin/dd if=/dev/zero of=/var/openstack/cinder/cinder-volumes bs=1 count=0 seek=2G',
+}
+->
+exec 
+{ 
+	'mounting':
+	command=>'/sbin/losetup /dev/loop2 /var/openstack/cinder/cinder-volumes',
+}
+->
+#fdisk step remaining
+
+
+physical_volume
+{
+	'/dev/loop2':
+	ensure=>present,
+}
+->
+volume_group
+{
+	'cinder-volumes':
+	ensure=>present,
+	physical_volumes=>'/dev/loop2'	
+}
+->
+file_line 
+{ 
+	'care reboot1':
+	path => '/etc/rc.local',
+	line => 'exit 0',
+	ensure=>absent,
+}
+->
+file_line 
+{ 
+	'care reboot2':
+	path => '/etc/rc.local',
+	line => 'losetup /dev/loop2 /var/openstack/cinder/cinder-volumes'
+exit 0',
+	ensure=>present,
+}
+->
+exec 
+{ 
+	'restart cinder-volume':
+	command=>'/usr/sbin/service cinder-volume restart',
+}
+->
+exec 
+{ 
+	'restart cinder-api':
+	command=>'/usr/sbin/service cinder-api restart',
+}
+->
+exec 
+{ 
+	'restart cinder-scheduler':
+	command=>'/usr/sbin/service cinder-scheduler restart',
+}
+
+
+

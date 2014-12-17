@@ -1,0 +1,256 @@
+package 
+{ 
+	'glance':
+	ensure => installed,
+}
+->
+file
+{ 
+	'/var/lib/glance/glance.sqlite':
+	ensure => absent,
+}
+->
+mysqlexec::db
+{	
+	'creating glance database':
+	host=>localhost,
+	username=>root,
+	dbname=>glance,
+	ensure=>present,
+}
+->
+mysqlexec::user
+{	
+	'granting access':
+	username=>root,
+	dbuser=>glanceUser,
+	privileges => [ALL],
+	dbname =>glance,
+	dbpassword=>glancePass,
+	ensure=>present,
+}
+->
+mysqlexec::user
+{	
+	'granting access localhost':
+	host=>localhost,
+	username=>root,
+	dbuser=>glanceUser,
+	privileges =>[ALL],
+	dbname =>glance,
+	dbpassword=>glancePass,
+	ensure=>present,
+}
+->
+file
+{   
+	"/tmp/openstack":
+	ensure => "directory",
+}
+->
+file
+{   
+	"/tmp/openstack/glance":
+	ensure => "directory",
+}
+->
+file 
+{ 
+'/tmp/openstack/glance/glance-api-paste.ini':
+ensure => present,
+source => '/etc/glance/glance-api-paste.ini',
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/paste.filter_factory':
+	value=>	'keystoneclient.middleware.auth_token:filter_factory',
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/delay_auth_decision':
+	value=>	true,
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/auth_host':
+	value=>'127.0.0.1',
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/auth_port':
+	value=>'35357',
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/auth_protocol':
+	value=>'http',
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/admin_tenant_name':
+	value=>'service',
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/admin_user':
+	value=>'glance',
+	ensure=>present,
+}
+->
+glance_api_paste_ini
+{
+	'filter:authtoken/admin_pass':
+	value=>'service_pass',
+	ensure=>present,
+}
+->
+file 
+{ 
+'/tmp/openstack/glance/glance-registry-paste.ini':
+ensure => present,
+source => '/etc/glance/glance-registry-paste.ini',
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/paste.filter_factory':
+	value=>	'keystoneclient.middleware.auth_token:filter_factory',
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/auth_host':
+	value=>'127.0.0.1',
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/auth_port':
+	value=>'35357',
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/auth_protocol':
+	value=>'http',
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/admin_tenant_name':
+	value=>'service',
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/admin_user':
+	value=>'glance',
+	ensure=>present,
+}
+->
+glance_registry_paste_ini
+{
+	'filter:authtoken/admin_pass':
+	value=>'service_pass',
+	ensure=>present,
+}
+->
+file 
+{ 
+'/tmp/openstack/glance/glance-api.conf':
+ensure => present,
+source => '/etc/glance/glance-api.conf',
+}
+->
+glance_api_config
+{
+	'DEFAULT/sql_connection':
+	ensure=>present,
+	value=>'mysql://glanceUser:glancePass@127.0.0.1/glance',
+}
+->
+glance_api_config
+{
+	'paste_deploy/flavor':
+	ensure=>present,
+	value=>'keystone';
+}
+file 
+{ 
+'/tmp/openstack/glance/glance-registry.conf':
+ensure => present,
+source => '/etc/glance/glance-registry.conf',
+}
+->
+glance_registry_config
+{
+	'DEFAULT/sql_connection':
+	ensure=>present,
+	value=>'mysql://glanceUser:glancePass@127.0.0.1/glance',
+}
+->
+glance_registry_config
+{
+	'paste_deploy/flavor':
+	ensure=>present,
+	value=>'keystone';
+}
+->
+exec 
+{ 
+	'glance-api_restart_1':
+	command=>'/usr/sbin/service glance-api restart',
+}
+->
+exec 
+{ 
+	'glance-registry_restart_1':
+	command=>'/usr/sbin/service glance-registry restart',
+}
+->
+exec 
+{ 
+	'db_sync':
+	command=>'/usr/bin/glance-manage db_sync',
+}
+->
+exec 
+{ 
+	'glance-api_restart_2':
+	command=>'/usr/sbin/service glance-api restart',
+}
+->
+exec 
+{ 
+	'glance-registry_restart_2':
+	command=>'/usr/sbin/service glance-registry restart',
+}
+
+
+/*
+export OS_USERNAME=admin
+export OS_TENANT_NAME=demo
+export OS_PASSWORD=secrete
+export OS_AUTH_URL="http://127.0.0.1:35357/v2.0"
+*/
+
+
+

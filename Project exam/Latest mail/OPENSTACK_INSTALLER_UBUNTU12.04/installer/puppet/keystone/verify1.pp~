@@ -1,0 +1,6 @@
+file 
+{ 
+   '/etc/environment':
+   content =>"",
+}
+

@@ -1,0 +1,84 @@
+exec 
+{ 
+	'1_modules':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/iniconfig/iniconfig_modules.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'2_net':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/iniconfig/iniconfig_net.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'3_iniconfig':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/iniconfig/iniconfig.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'4_keystone':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/keystone/keystone.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'5_glance':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/glance/glance.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'6_cinder':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/cinder/cinder.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'ovs':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/quantum/openvswitch.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'q1':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/quantum/q1.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'q2':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/quantum/q2.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'kvm':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/nova/kvm.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'nova':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/nova/nova.pp',
+	logoutput=>true
+}
+->
+exec 
+{ 
+	'horizon':
+	command=>'/usr/bin/puppet apply /var/installer/puppet/horizon/horizon.pp',
+	logoutput=>true
+}
+

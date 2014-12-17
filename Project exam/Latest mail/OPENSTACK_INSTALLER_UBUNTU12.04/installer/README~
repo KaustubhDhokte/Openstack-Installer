@@ -1,0 +1,35 @@
+steps to install openstack
+
+1.Make sure that the system is connected to internet.Go in sudo mode and don't leave it until the end of this guide.
+
+	sudo su
+
+2.paste the 'installer' folder in '/var' folder of system on which you want to install openstack.
+
+	cp -avr installer /var/installer
+
+3.make setup1.sh executable and execute it.it will install puppet on the system and will do the initial configuration for installation.e.g.    installing mysql,adding repositories.
+	
+	chmod +x /var/installer/setup1.sh
+	bash /var/installer/setup1.sh
+
+4.if you have mysql installed on system,write the mysql root password in between single quotes in /var/installer/ref.pp else leave it as it is.
+  (line : $mysql_root_password=''). 'ref.pp' shows all the default values of parameters, if you want to change any you can change at this step.
+
+5.make setup2.sh executable and execute it.it will install the services.
+	
+	chmod +x /var/installer/setup2.sh
+	bash /var/installer/setup2.sh
+
+6.reboot the system.
+
+7.now you can access the horizon dashboard by going to '127.0.0.1/horizon' on your browser.use username as 'admin' and password as 'secrete' at initial stage.later you can create another user.
+
+8.you can use openrc file to set required parameters so as to set the environment variables for command line interface.
+
+	source /var/installer/openrc
+
+9.at any step if installation fails (e.g.internet failure,power failure) execute the unsetup file for corresponding step and then execute     setup from that particular step.
+
+10. you can uninstall the entire setup by executing unsetup2.sh,unsetup1.sh in the same mentioned sequence.
+

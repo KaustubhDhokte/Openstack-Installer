@@ -1,0 +1,9 @@
+#!/bin/bash
+
+wget http://apt.puppetlabs.com/puppetlabs-release-precise.deb
+dpkg -i puppetlabs-release-precise.deb
+sudo apt-get update
+sudo apt-get -y install puppet
+puppet --version
+
+exit 0

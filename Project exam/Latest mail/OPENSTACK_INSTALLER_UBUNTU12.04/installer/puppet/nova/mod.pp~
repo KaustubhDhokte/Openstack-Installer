@@ -1,0 +1,18 @@
+package
+{
+	'git':
+	ensure=>installed,
+}
+->
+exec 
+{ 
+	'editfile':
+	command=>'/usr/bin/git clone https://github.com/mstrauss/puppet-editfile.git /etc/puppet/modules/editfile',
+}
+
+exec 
+{ 
+	'nova':
+	command=>'/usr/bin/puppet module install -f puppetlabs-nova --version 3.1.0',
+}
+

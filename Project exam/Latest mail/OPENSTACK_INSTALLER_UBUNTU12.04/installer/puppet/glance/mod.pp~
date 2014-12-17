@@ -1,0 +1,6 @@
+exec 
+{ 
+	'glance':
+	command=>'/usr/bin/puppet module install -f puppetlabs-glance --version 3.0.0',
+}
+
